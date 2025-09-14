@@ -3,6 +3,7 @@ import time
 import re
 import argparse
 from openai import OpenAI
+import google.generativeai as genai
 import textwrap
 
 # If using OpenAI
@@ -43,6 +44,10 @@ def initialize_ai_client(provider, api_key=None, base_url=None):
         api_key = api_key or os.getenv("CEREBRAS_API_KEY")
         base_url = base_url or "https://api.cerebras.ai/v1"
         return OpenAI(api_key=api_key, base_url=base_url)
+    elif provider == "gemini":
+        api_key = api_key or os.getenv("GEMINI_API_KEY")
+        genai.configure(api_key=api_key)
+        return genai.GenerativeModel('gemini-1.5-flash')
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -76,6 +81,7 @@ def chunk_text(text, max_chars=MAX_CHARS):
     return textwrap.wrap(text, max_chars)
 
 def summarize_chunk(chunk, idx, model):
+    global provider
     prompt = f"""
     You are an expert software documenter.
     Summarize this part of the repository (chunk {idx}).
@@ -85,11 +91,15 @@ def summarize_chunk(chunk, idx, model):
     {chunk}
     """
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.choices[0].message.content.strip()
+    if provider == "gemini":
+        response = client.generate_content(prompt)
+        return response.text
+    else:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
 
 def extract_preserved_sections(readme_content):
     """Extract sections that should be preserved from existing README"""
@@ -121,27 +131,28 @@ def extract_preserved_sections(readme_content):
     return preserved
 
 def generate_readme(chunks, model):
+    global provider
     summaries = []
     for i, chunk in enumerate(chunks, 1):
         print(f"📝 Summarizing chunk {i}/{len(chunks)}...")
         summaries.append(summarize_chunk(chunk, i, model))
 
     combined_summary = "\n\n".join(summaries)
-    
+
     # Check if README.md exists and extract preserved sections
     preserved_sections = {}
     if os.path.exists("README.md"):
         with open("README.md", "r", encoding="utf-8") as f:
             existing_content = f.read()
             preserved_sections = extract_preserved_sections(existing_content)
-    
+
     # Format preserved sections for the prompt
     preserved_info = ""
     if preserved_sections:
         preserved_info = "\n\nIMPORTANT: The following sections from the existing README.md should be preserved in the final output:\n"
         for section_name, content in preserved_sections.items():
             preserved_info += f"{section_name.capitalize()} section:\n```\n{content}\n```\n\n"
-    
+
     final_prompt = f"""
     Based on the provided summaries of repository chunks, generate a complete and professional README.md file if one does not already exist. If a README.md is present, update and improve it accordingly.
     Include:
@@ -157,27 +168,32 @@ def generate_readme(chunks, model):
 
     Summaries:
     {combined_summary}
-    
+
     {preserved_info}
     """
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": final_prompt}],
-    )
-    return response.choices[0].message.content.strip()
+    if provider == "gemini":
+        response = client.generate_content(final_prompt)
+        return response.text
+    else:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": final_prompt}],
+        )
+        return response.choices[0].message.content.strip()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate or update README.md using AI")
-    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama", "cerebras"], default="deepseek",
+    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama", "cerebras", "gemini"], default="deepseek",
                         help="AI provider to use (default: deepseek)")
     parser.add_argument("--model", default="deepseek-chat",
-                        help="Model to use for AI generation (default: deepseek-chat for DeepSeek, gpt-4 for OpenAI, llama3 for Ollama, llama3.1 for Cerebras)")
+                         help="Model to use for AI generation (default: deepseek-chat for DeepSeek, gpt-4 for OpenAI, llama3 for Ollama, llama3.1 for Cerebras, gemini-1.5-flash for Gemini)")
     parser.add_argument("--api-key", help="API key for the selected provider")
     parser.add_argument("--base-url", help="Base URL for the selected provider")
     
     args = parser.parse_args()
     
+    provider = args.provider
     start_time = time.time()
     print("📦 Collecting repository content...")
     repo_content = collect_repo_content()

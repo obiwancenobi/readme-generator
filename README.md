@@ -4,7 +4,7 @@ An automated Python tool that generates professional README.md files for any cod
 
 ## Features
 
-- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, Ollama, and Cerebras AI models
+- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, Ollama, Cerebras, and Gemini AI models
 - **AI-Powered Documentation**: Automatically generates professional README files using advanced language models
 - **Smart Content Collection**: Walks through your repository and collects relevant files while ignoring unnecessary directories and files
 - **Large File Handling**: Skips files larger than 50KB to prevent API overload
@@ -19,7 +19,7 @@ An automated Python tool that generates professional README.md files for any cod
 1. Clone or download this repository
 2. Install the required dependencies:
    ```bash
-   pip install openai
+   pip install openai google-generativeai
    ```
 
 ## Setup
@@ -53,6 +53,12 @@ Before using the tool, you need to set up your API key for the selected provider
    ```bash
    export CEREBRAS_API_KEY="your_api_key_here"
    ```
+### For Gemini:
+1. Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Set the environment variable:
+    ```bash
+    export GEMINI_API_KEY="your_api_key_here"
+    ```
 
 ## Usage
 
@@ -78,6 +84,8 @@ python generate_readme.py --provider openai --model gpt-4
 
 # Using Ollama with Llama3
 python generate_readme.py --provider ollama --model llama3
+# Using Gemini
+python generate_readme.py --provider gemini
 
 # Using a specific model with DeepSeek
 python generate_readme.py --provider deepseek --model deepseek-coder
@@ -95,11 +103,12 @@ The script will:
 ## Tech Stack
 
 - **Python 3**: Main programming language
-- **Multiple AI Providers**: 
+- **Multiple AI Providers**:
   - DeepSeek API (default)
   - OpenAI API
   - Ollama (local AI models)
   - Cerebras API
+  - Google Gemini API
 - **OpenAI Python Library**: For API communication (all providers use OpenAI-compatible APIs)
 - **Standard Libraries**: 
   - `os` for file system operations
@@ -119,9 +128,10 @@ The script follows a three-step process:
 
 ## Limitations
 
-- Requires an API key for DeepSeek, OpenAI, or Cerebras (which may have associated costs)
+- Requires an API key for DeepSeek, OpenAI, Cerebras, or Gemini (which may have associated costs)
 - For Ollama, requires local installation and model downloads
 - For Cerebras, requires an API key from Cerebras
+- For Gemini, requires an API key from Google AI Studio
 - Only processes files up to 50KB in size
 - Limited to specific file extensions (`.py`, `.js`, `.ts`, `.dart`, `.java`, `.kt`, `.go`, `.rs`, `.swift`, `.md`, `.json`, `.yml`, `.yaml`)
 - May not perfectly capture all project-specific details and nuances
