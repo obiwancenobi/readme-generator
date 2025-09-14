@@ -4,7 +4,7 @@ An automated Python tool that generates professional README.md files for any cod
 
 ## Features
 
-- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, and Ollama AI models
+- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, Ollama, and Cerebras AI models
 - **AI-Powered Documentation**: Automatically generates professional README files using advanced language models
 - **Smart Content Collection**: Walks through your repository and collects relevant files while ignoring unnecessary directories and files
 - **Large File Handling**: Skips files larger than 50KB to prevent API overload
@@ -47,6 +47,13 @@ Before using the tool, you need to set up your API key for the selected provider
    ollama pull llama3
    ```
 
+### For Cerebras:
+1. Get your API key from [Cerebras API](https://www.cerebras.ai/)
+2. Set the environment variable:
+   ```bash
+   export CEREBRAS_API_KEY="your_api_key_here"
+   ```
+
 ## Usage
 
 Run the script from the root of any repository with optional arguments:
@@ -56,7 +63,7 @@ python generate_readme.py [--provider PROVIDER] [--model MODEL] [--api-key API_K
 ```
 
 ### Options:
-- `--provider`: AI provider to use (choices: "deepseek", "openai", "ollama", default: "deepseek")
+- `--provider`: AI provider to use (choices: "deepseek", "openai", "ollama", "cerebras", default: "deepseek")
 - `--model`: Model to use for AI generation (default: "deepseek-chat")
 - `--api-key`: API key for the selected provider (optional, can use environment variables)
 - `--base-url`: Base URL for the selected provider (optional, uses defaults if not provided)
@@ -74,6 +81,9 @@ python generate_readme.py --provider ollama --model llama3
 
 # Using a specific model with DeepSeek
 python generate_readme.py --provider deepseek --model deepseek-coder
+
+# Using Cerebras with llama3.1
+python generate_readme.py --provider cerebras --model llama3.1
 ```
 
 The script will:
@@ -89,6 +99,7 @@ The script will:
   - DeepSeek API (default)
   - OpenAI API
   - Ollama (local AI models)
+  - Cerebras API
 - **OpenAI Python Library**: For API communication (all providers use OpenAI-compatible APIs)
 - **Standard Libraries**: 
   - `os` for file system operations
@@ -108,8 +119,9 @@ The script follows a three-step process:
 
 ## Limitations
 
-- Requires an API key for DeepSeek or OpenAI (which may have associated costs)
+- Requires an API key for DeepSeek, OpenAI, or Cerebras (which may have associated costs)
 - For Ollama, requires local installation and model downloads
+- For Cerebras, requires an API key from Cerebras
 - Only processes files up to 50KB in size
 - Limited to specific file extensions (`.py`, `.js`, `.ts`, `.dart`, `.java`, `.kt`, `.go`, `.rs`, `.swift`, `.md`, `.json`, `.yml`, `.yaml`)
 - May not perfectly capture all project-specific details and nuances

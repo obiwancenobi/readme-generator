@@ -10,6 +10,10 @@ import textwrap
 # export OPENAI_API_KEY="your_api_key_here"
 # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# If using Cerebras
+# Make sure you set your API key before running:
+# export CEREBRAS_API_KEY="your_api_key_here"
+
 
 IGNORED_DIRS = {".git", ".github", "__pycache__", "node_modules", "build", "dist", ".idea", ".vscode", "venv", ".venv", "__snapshots__"}
 ALLOWED_EXTS = (".py", ".js", ".ts", ".dart", ".java", ".kt", ".go", ".rs", ".swift", ".md", ".json", ".yml", ".yaml")
@@ -34,6 +38,10 @@ def initialize_ai_client(provider, api_key=None, base_url=None):
     elif provider == "ollama":
         api_key = "ollama"  # Ollama doesn't require an API key
         base_url = base_url or "http://localhost:11434/v1"
+        return OpenAI(api_key=api_key, base_url=base_url)
+    elif provider == "cerebras":
+        api_key = api_key or os.getenv("CEREBRAS_API_KEY")
+        base_url = base_url or "https://api.cerebras.ai/v1"
         return OpenAI(api_key=api_key, base_url=base_url)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
@@ -161,10 +169,10 @@ def generate_readme(chunks, model):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate or update README.md using AI")
-    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama"], default="deepseek",
+    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama", "cerebras"], default="deepseek",
                         help="AI provider to use (default: deepseek)")
     parser.add_argument("--model", default="deepseek-chat",
-                        help="Model to use for AI generation (default: deepseek-chat)")
+                        help="Model to use for AI generation (default: deepseek-chat for DeepSeek, gpt-4 for OpenAI, llama3 for Ollama, llama3.1 for Cerebras)")
     parser.add_argument("--api-key", help="API key for the selected provider")
     parser.add_argument("--base-url", help="Base URL for the selected provider")
     
