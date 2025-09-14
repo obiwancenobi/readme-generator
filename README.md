@@ -1,10 +1,11 @@
 # Auto README Generator
 
-An automated Python tool that generates professional README.md files for any code repository using the DeepSeek AI API. It intelligently analyzes your codebase and creates documentation with minimal setup.
+An automated Python tool that generates professional README.md files for any code repository using various AI APIs. It intelligently analyzes your codebase and creates documentation with minimal setup, supporting multiple AI providers.
 
 ## Features
 
-- **AI-Powered Documentation**: Automatically generates professional README files using DeepSeek's advanced language model
+- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, and Ollama AI models
+- **AI-Powered Documentation**: Automatically generates professional README files using advanced language models
 - **Smart Content Collection**: Walks through your repository and collects relevant files while ignoring unnecessary directories and files
 - **Large File Handling**: Skips files larger than 50KB to prevent API overload
 - **Content Chunking**: Splits large repositories into manageable chunks for optimal AI processing
@@ -23,37 +24,77 @@ An automated Python tool that generates professional README.md files for any cod
 
 ## Setup
 
-Before using the tool, you need to set up your DeepSeek API key:
+Before using the tool, you need to set up your API key for the selected provider:
 
+### For DeepSeek (default):
 1. Get your API key from [DeepSeek API](https://api.deepseek.com/)
 2. Set the environment variable:
    ```bash
    export DEEPSEEK_API_KEY="your_api_key_here"
    ```
 
+### For OpenAI:
+1. Get your API key from [OpenAI API](https://platform.openai.com/)
+2. Set the environment variable:
+   ```bash
+   export OPENAI_API_KEY="your_api_key_here"
+   ```
+
+### For Ollama:
+1. Install and run [Ollama](https://ollama.com/)
+2. Pull a model (e.g., llama3):
+   ```bash
+   ollama pull llama3
+   ```
+
 ## Usage
 
-Simply run the script from the root of any repository:
+Run the script from the root of any repository with optional arguments:
 
 ```bash
+python generate_readme.py [--provider PROVIDER] [--model MODEL] [--api-key API_KEY] [--base-url BASE_URL]
+```
+
+### Options:
+- `--provider`: AI provider to use (choices: "deepseek", "openai", "ollama", default: "deepseek")
+- `--model`: Model to use for AI generation (default: "deepseek-chat")
+- `--api-key`: API key for the selected provider (optional, can use environment variables)
+- `--base-url`: Base URL for the selected provider (optional, uses defaults if not provided)
+
+### Examples:
+```bash
+# Using DeepSeek (default)
 python generate_readme.py
+
+# Using OpenAI with GPT-4
+python generate_readme.py --provider openai --model gpt-4
+
+# Using Ollama with Llama3
+python generate_readme.py --provider ollama --model llama3
+
+# Using a specific model with DeepSeek
+python generate_readme.py --provider deepseek --model deepseek-coder
 ```
 
 The script will:
 1. Collect all relevant files in the repository
 2. Split the content into manageable chunks
-3. Generate summaries for each chunk using DeepSeek AI
+3. Generate summaries for each chunk using the selected AI provider
 4. Create a complete README.md file based on these summaries
 
 ## Tech Stack
 
 - **Python 3**: Main programming language
-- **DeepSeek API**: AI model for generating documentation
-- **OpenAI Python Library**: For API communication (DeepSeek is OpenAI-compatible)
+- **Multiple AI Providers**: 
+  - DeepSeek API (default)
+  - OpenAI API
+  - Ollama (local AI models)
+- **OpenAI Python Library**: For API communication (all providers use OpenAI-compatible APIs)
 - **Standard Libraries**: 
   - `os` for file system operations
   - `time` for execution timing
   - `textwrap` for content chunking
+  - `argparse` for command-line argument parsing
 
 ## How It Works
 
@@ -62,16 +103,16 @@ The script follows a three-step process:
 1. **Content Collection**: Uses `os.walk` to traverse the repository, collecting code from files while ignoring common build artifacts, dependency directories, and large files
 2. **Content Chunking**: Splits the collected content into appropriately sized chunks (around 8-10k tokens) for AI processing
 3. **AI Processing**: 
-   - Sends each chunk to DeepSeek AI for summarization
-   - Combines all summaries and sends them to DeepSeek AI to generate the final README
+   - Sends each chunk to the selected AI provider for summarization
+   - Combines all summaries and sends them to the AI provider to generate the final README
 
 ## Limitations
 
-- Requires a DeepSeek API key (which may have associated costs)
+- Requires an API key for DeepSeek or OpenAI (which may have associated costs)
+- For Ollama, requires local installation and model downloads
 - Only processes files up to 50KB in size
 - Limited to specific file extensions (`.py`, `.js`, `.ts`, `.dart`, `.java`, `.kt`, `.go`, `.rs`, `.swift`, `.md`, `.json`, `.yml`, `.yaml`)
 - May not perfectly capture all project-specific details and nuances
-- File paths in the system are hardcoded and may need adjustments for different repository structures
 
 ## Contributing
 

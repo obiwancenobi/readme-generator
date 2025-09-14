@@ -1,6 +1,7 @@
 import os
 import time
 import re
+import argparse
 from openai import OpenAI
 import textwrap
 
@@ -9,11 +10,6 @@ import textwrap
 # export OPENAI_API_KEY="your_api_key_here"
 # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Use DeepSeek API (OpenAI-compatible)
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com/v1",  # DeepSeek endpoint
-)
 
 IGNORED_DIRS = {".git", ".github", "__pycache__", "node_modules", "build", "dist", ".idea", ".vscode", "venv", ".venv", "__snapshots__"}
 ALLOWED_EXTS = (".py", ".js", ".ts", ".dart", ".java", ".kt", ".go", ".rs", ".swift", ".md", ".json", ".yml", ".yaml")
@@ -25,6 +21,22 @@ IGNORED_FILES = {
 
 MAX_FILE_SIZE = 50_000   # skip files bigger than 50KB
 MAX_CHARS = 12_000       # safe chunk size (~8-10k tokens)
+
+def initialize_ai_client(provider, api_key=None, base_url=None):
+    """Initialize AI client based on provider"""
+    if provider == "deepseek":
+        api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        base_url = base_url or "https://api.deepseek.com/v1"
+        return OpenAI(api_key=api_key, base_url=base_url)
+    elif provider == "openai":
+        api_key = api_key or os.getenv("OPENAI_API_KEY")
+        return OpenAI(api_key=api_key)
+    elif provider == "ollama":
+        api_key = "ollama"  # Ollama doesn't require an API key
+        base_url = base_url or "http://localhost:11434/v1"
+        return OpenAI(api_key=api_key, base_url=base_url)
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
 
 def collect_repo_content(path="."):
     repo_texts = []
@@ -55,7 +67,7 @@ def chunk_text(text, max_chars=MAX_CHARS):
     """Split long text into chunks within safe size."""
     return textwrap.wrap(text, max_chars)
 
-def summarize_chunk(chunk, idx):
+def summarize_chunk(chunk, idx, model):
     prompt = f"""
     You are an expert software documenter.
     Summarize this part of the repository (chunk {idx}).
@@ -66,7 +78,7 @@ def summarize_chunk(chunk, idx):
     """
 
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model=model,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content.strip()
@@ -100,11 +112,11 @@ def extract_preserved_sections(readme_content):
     
     return preserved
 
-def generate_readme(chunks):
+def generate_readme(chunks, model):
     summaries = []
     for i, chunk in enumerate(chunks, 1):
         print(f"📝 Summarizing chunk {i}/{len(chunks)}...")
-        summaries.append(summarize_chunk(chunk, i))
+        summaries.append(summarize_chunk(chunk, i, model))
 
     combined_summary = "\n\n".join(summaries)
     
@@ -142,21 +154,34 @@ def generate_readme(chunks):
     """
 
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model=model,
         messages=[{"role": "user", "content": final_prompt}],
     )
     return response.choices[0].message.content.strip()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate or update README.md using AI")
+    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama"], default="deepseek",
+                        help="AI provider to use (default: deepseek)")
+    parser.add_argument("--model", default="deepseek-chat",
+                        help="Model to use for AI generation (default: deepseek-chat)")
+    parser.add_argument("--api-key", help="API key for the selected provider")
+    parser.add_argument("--base-url", help="Base URL for the selected provider")
+    
+    args = parser.parse_args()
+    
     start_time = time.time()
     print("📦 Collecting repository content...")
     repo_content = collect_repo_content()
+
+    print("🔧 Initializing AI client...")
+    client = initialize_ai_client(args.provider, args.api_key, args.base_url)
 
     print("🔪 Splitting into chunks...")
     chunks = chunk_text(repo_content)
 
     print(f"🤖 Summarizing {len(chunks)} chunks...")
-    readme_content = generate_readme(chunks)
+    readme_content = generate_readme(chunks, args.model)
 
     with open("README.md", "w", encoding="utf-8") as f:
         f.write(readme_content)
