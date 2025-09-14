@@ -1,0 +1,167 @@
+import os
+import time
+import re
+from openai import OpenAI
+import textwrap
+
+# If using OpenAI
+# Make sure you set your API key before running:
+# export OPENAI_API_KEY="your_api_key_here"
+# client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Use DeepSeek API (OpenAI-compatible)
+client = OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com/v1",  # DeepSeek endpoint
+)
+
+IGNORED_DIRS = {".git", ".github", "__pycache__", "node_modules", "build", "dist", ".idea", ".vscode", "venv", ".venv", "__snapshots__"}
+ALLOWED_EXTS = (".py", ".js", ".ts", ".dart", ".java", ".kt", ".go", ".rs", ".swift", ".md", ".json", ".yml", ".yaml")
+IGNORED_FILES = {
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+    "Cargo.lock", "poetry.lock", "pubspec.lock",
+    "requirements.txt", "Pipfile.lock"
+}
+
+MAX_FILE_SIZE = 50_000   # skip files bigger than 50KB
+MAX_CHARS = 12_000       # safe chunk size (~8-10k tokens)
+
+def collect_repo_content(path="."):
+    repo_texts = []
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+
+        for filename in files:
+            if filename in IGNORED_FILES:
+                continue
+            if not filename.lower().endswith(ALLOWED_EXTS):
+                continue
+
+            file_path = os.path.join(root, filename)
+            try:
+                if os.path.getsize(file_path) > MAX_FILE_SIZE:
+                    print(f"⚠️ Skipped large file: {file_path}")
+                    continue
+
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    repo_texts.append(f"# File: {file_path}\n{content}")
+
+            except Exception as e:
+                print(f"⚠️ Skipped {file_path}: {e}")
+    return "\n\n".join(repo_texts)
+
+def chunk_text(text, max_chars=MAX_CHARS):
+    """Split long text into chunks within safe size."""
+    return textwrap.wrap(text, max_chars)
+
+def summarize_chunk(chunk, idx):
+    prompt = f"""
+    You are an expert software documenter.
+    Summarize this part of the repository (chunk {idx}).
+    Focus on describing purpose, features, and usage.
+
+    Content:
+    {chunk}
+    """
+
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.choices[0].message.content.strip()
+
+def extract_preserved_sections(readme_content):
+    """Extract sections that should be preserved from existing README"""
+    preserved = {}
+    
+    # Extract license section (everything from ## License to end of file)
+    license_pattern = r"(## License\s*\n(?:.|\n)*)"
+    license_match = re.search(license_pattern, readme_content)
+    if license_match:
+        preserved['license'] = license_match.group(1)
+    
+    # Extract contributing section
+    contributing_pattern = r"(## Contributing\s*\n(?:.|\n)*?)(?=\n## \w+|\Z)"
+    contributing_match = re.search(contributing_pattern, readme_content)
+    if contributing_match:
+        preserved['contributing'] = contributing_match.group(1)
+    
+    # Extract installation/setup section
+    installation_pattern = r"(## Installation\s*\n(?:.|\n)*?)(?=\n## \w+|\Z)"
+    installation_match = re.search(installation_pattern, readme_content)
+    if installation_match:
+        preserved['installation'] = installation_match.group(1)
+    
+    setup_pattern = r"(## Setup\s*\n(?:.|\n)*?)(?=\n## \w+|\Z)"
+    setup_match = re.search(setup_pattern, readme_content)
+    if setup_match:
+        preserved['setup'] = setup_match.group(1)
+    
+    return preserved
+
+def generate_readme(chunks):
+    summaries = []
+    for i, chunk in enumerate(chunks, 1):
+        print(f"📝 Summarizing chunk {i}/{len(chunks)}...")
+        summaries.append(summarize_chunk(chunk, i))
+
+    combined_summary = "\n\n".join(summaries)
+    
+    # Check if README.md exists and extract preserved sections
+    preserved_sections = {}
+    if os.path.exists("README.md"):
+        with open("README.md", "r", encoding="utf-8") as f:
+            existing_content = f.read()
+            preserved_sections = extract_preserved_sections(existing_content)
+    
+    # Format preserved sections for the prompt
+    preserved_info = ""
+    if preserved_sections:
+        preserved_info = "\n\nIMPORTANT: The following sections from the existing README.md should be preserved in the final output:\n"
+        for section_name, content in preserved_sections.items():
+            preserved_info += f"{section_name.capitalize()} section:\n```\n{content}\n```\n\n"
+    
+    final_prompt = f"""
+    Based on the provided summaries of repository chunks, generate a complete and professional README.md file if one does not already exist. If a README.md is present, update and improve it accordingly.
+    Include:
+    - Project Title
+    - Description
+    - Features
+    - Installation / Setup instructions
+    - Usage examples
+    - Tech stack
+    - Screenshots
+    - Contributing (if applicable)
+    - License (leave placeholder if unknown)
+
+    Summaries:
+    {combined_summary}
+    
+    {preserved_info}
+    """
+
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[{"role": "user", "content": final_prompt}],
+    )
+    return response.choices[0].message.content.strip()
+
+if __name__ == "__main__":
+    start_time = time.time()
+    print("📦 Collecting repository content...")
+    repo_content = collect_repo_content()
+
+    print("🔪 Splitting into chunks...")
+    chunks = chunk_text(repo_content)
+
+    print(f"🤖 Summarizing {len(chunks)} chunks...")
+    readme_content = generate_readme(chunks)
+
+    with open("README.md", "w", encoding="utf-8") as f:
+        f.write(readme_content)
+
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"✅ README.md has been generated/updated successfully!")
+    print(f"⏱️ Total execution time: {duration:.2f} seconds")
