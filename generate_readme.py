@@ -213,4 +213,9 @@ if __name__ == "__main__":
     end_time = time.time()
     duration = end_time - start_time
     print(f"✅ README.md has been generated/updated successfully!")
-    print(f"⏱️ Total execution time: {duration:.2f} seconds")
+    if duration < 60:
+        print(f"⏱️ Total execution time: {duration:.2f} seconds")
+    else:
+        minutes = int(duration // 60)
+        seconds = duration % 60
+        print(f"⏱️ Total execution time: {minutes} minutes {seconds:.2f} seconds")
