@@ -4,7 +4,7 @@ An automated Python tool that generates professional README.md files for any cod
 
 ## Features
 
-- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, Ollama, Cerebras, and Gemini AI models
+- **Multi-Provider AI Support**: Works with DeepSeek, OpenAI, Ollama, Cerebras, Gemini, and OpenRouter AI models
 - **AI-Powered Documentation**: Automatically generates professional README files using advanced language models
 - **Smart Content Collection**: Walks through your repository and collects relevant files while ignoring unnecessary directories and files
 - **Large File Handling**: Skips files larger than 50KB to prevent API overload
@@ -60,6 +60,13 @@ Before using the tool, you need to set up your API key for the selected provider
     export GEMINI_API_KEY="your_api_key_here"
     ```
 
+### For OpenRouter:
+1. Get your API key from [OpenRouter](https://openrouter.ai/)
+2. Set the environment variable:
+    ```bash
+    export OPENROUTER_API_KEY="your_api_key_here"
+    ```
+
 ## Usage
 
 Run the script from the root of any repository with optional arguments:
@@ -69,7 +76,7 @@ python generate_readme.py [--provider PROVIDER] [--model MODEL] [--api-key API_K
 ```
 
 ### Options:
-- `--provider`: AI provider to use (choices: "deepseek", "openai", "ollama", "cerebras", default: "deepseek")
+- `--provider`: AI provider to use (choices: "deepseek", "openai", "ollama", "cerebras", "gemini", "openrouter", default: "deepseek")
 - `--model`: Model to use for AI generation (default: "deepseek-chat")
 - `--api-key`: API key for the selected provider (optional, can use environment variables)
 - `--base-url`: Base URL for the selected provider (optional, uses defaults if not provided)
@@ -92,6 +99,9 @@ python generate_readme.py --provider deepseek --model deepseek-coder
 
 # Using Cerebras with llama3.1
 python generate_readme.py --provider cerebras --model llama3.1
+
+# Using OpenRouter with GPT-4o
+python generate_readme.py --provider openrouter --model openai/gpt-4o
 ```
 
 The script will:
@@ -109,6 +119,7 @@ The script will:
   - Ollama (local AI models)
   - Cerebras API
   - Google Gemini API
+  - OpenRouter API
 - **OpenAI Python Library**: For API communication (all providers use OpenAI-compatible APIs)
 - **Standard Libraries**: 
   - `os` for file system operations
@@ -128,10 +139,11 @@ The script follows a three-step process:
 
 ## Limitations
 
-- Requires an API key for DeepSeek, OpenAI, Cerebras, or Gemini (which may have associated costs)
+- Requires an API key for DeepSeek, OpenAI, Cerebras, Gemini, or OpenRouter (which may have associated costs)
 - For Ollama, requires local installation and model downloads
 - For Cerebras, requires an API key from Cerebras
 - For Gemini, requires an API key from Google AI Studio
+- For OpenRouter, requires an API key from OpenRouter
 - Only processes files up to 50KB in size
 - Limited to specific file extensions (`.py`, `.js`, `.ts`, `.dart`, `.java`, `.kt`, `.go`, `.rs`, `.swift`, `.md`, `.json`, `.yml`, `.yaml`)
 - May not perfectly capture all project-specific details and nuances

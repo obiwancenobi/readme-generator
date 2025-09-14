@@ -48,6 +48,10 @@ def initialize_ai_client(provider, api_key=None, base_url=None):
         api_key = api_key or os.getenv("GEMINI_API_KEY")
         genai.configure(api_key=api_key)
         return genai.GenerativeModel('gemini-1.5-flash')
+    elif provider == "openrouter":
+        api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        base_url = base_url or "https://openrouter.ai/api/v1"
+        return OpenAI(api_key=api_key, base_url=base_url)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
 
@@ -184,10 +188,10 @@ def generate_readme(chunks, model):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate or update README.md using AI")
-    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama", "cerebras", "gemini"], default="deepseek",
+    parser.add_argument("--provider", choices=["deepseek", "openai", "ollama", "cerebras", "gemini", "openrouter"], default="deepseek",
                         help="AI provider to use (default: deepseek)")
     parser.add_argument("--model", default="deepseek-chat",
-                         help="Model to use for AI generation (default: deepseek-chat for DeepSeek, gpt-4 for OpenAI, llama3 for Ollama, llama3.1 for Cerebras, gemini-1.5-flash for Gemini)")
+                         help="Model to use for AI generation (default: deepseek-chat for DeepSeek, gpt-4 for OpenAI, llama3 for Ollama, llama3.1 for Cerebras, gemini-1.5-flash for Gemini, openai/gpt-4o for OpenRouter)")
     parser.add_argument("--api-key", help="API key for the selected provider")
     parser.add_argument("--base-url", help="Base URL for the selected provider")
     
