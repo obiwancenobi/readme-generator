@@ -110,6 +110,12 @@ The script will:
 3. Generate summaries for each chunk using the selected AI provider
 4. Create a complete README.md file based on these summaries
 
+### Output Samples
+- [cerebras - gpt-oss-120b](https://github.com/obiwancenobi/Github-Space/blob/main/readmes/README-cerebras-gpt-oss-120b.md)
+- [deepseek - deepseek-chat](https://github.com/obiwancenobi/Github-Space/blob/main/readmes/README-deepseek-deepseek-chat.md)
+- [gemini](https://github.com/obiwancenobi/Github-Space/blob/main/readmes/README-gemini.md)
+- [openrouter - sonoma-sky-alpha](https://github.com/obiwancenobi/Github-Space/blob/main/readmes/README-openrouter-sonoma-sky-alpha.md)
+
 ## Tech Stack
 
 - **Python 3**: Main programming language
